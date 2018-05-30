@@ -25,4 +25,13 @@ public class PersonDTO implements Serializable {
     public int getNumber() {
         return number;
     }
+
+    @Override
+    public String toString() {
+        return "PersonDTO{" +
+                "name='" + name + '\'' +
+                ", birthdate=" + birthdate +
+                ", number=" + number +
+                '}';
+    }
 }
