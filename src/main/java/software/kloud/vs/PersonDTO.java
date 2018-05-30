@@ -30,6 +30,18 @@ public class PersonDTO implements Serializable {
         return number;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setBirthdate(Date birthdate) {
+        this.birthdate = birthdate;
+    }
+
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
     @Override
     public String toString() {
         return "PersonDTO{" +

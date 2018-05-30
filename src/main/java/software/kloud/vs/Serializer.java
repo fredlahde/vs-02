@@ -1,22 +1,30 @@
 package software.kloud.vs;
 
 import java.beans.Transient;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
 
 public class Serializer {
 
+    public static final Map<Class<?>, Class<?>> primitiveTypesMap;
+
     private static final byte DIVIDER_BYTE = 0; //DIVIDER_STRING.getBytes()[0];
+
+    static {
+        primitiveTypesMap = new HashMap<>();
+        primitiveTypesMap.put(Integer.class, int.class);
+        primitiveTypesMap.put(Long.class, long.class);
+        primitiveTypesMap.put(Float.class, float.class);
+        primitiveTypesMap.put(Double.class, double.class);
+        primitiveTypesMap.put(Byte.class, byte.class);
+        primitiveTypesMap.put(Boolean.class, boolean.class);
+        primitiveTypesMap.put(Short.class, short.class);
+    }
 
     public byte[] serialize(Object input) throws IOException {
         var baos = new ByteArrayOutputStream();
@@ -37,6 +45,9 @@ public class Serializer {
                         baos.write(DIVIDER_BYTE);
                         // field value
                         baos.write(((Integer) value).byteValue());
+                        var buffer = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE);
+                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        buffer.putInt((Integer) value);
                         baos.write(DIVIDER_BYTE);
                     } else if (value.getClass().isAssignableFrom(String.class)) {
                         // field name
@@ -121,9 +132,11 @@ public class Serializer {
             Object obj = clazz.getConstructor().newInstance();
             for (var k : values.keySet()) {
                 var setterName = "set" + k.toUpperCase().charAt(0) + k.substring(1);
-                var setter = clazz.getMethod(setterName, types.get(k));
+                var setter = getMethodPrimitiveSafe(clazz, setterName, types.get(k));
                 if (types.get(k).equals(Integer.class)) {
-                    // TODO integer from byte array
+                    var buffer = ByteBuffer.wrap(values.get(k));
+                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    setter.invoke(buffer.getInt());
                 } else if (types.get(k).equals(String.class)) {
                     setter.invoke(obj, new String(values.get(k)));
                 } else if (types.get(k).equals(Date.class)) {
@@ -161,5 +174,20 @@ public class Serializer {
             }
         }
         return -1;
+    }
+
+    private Method getMethodPrimitiveSafe(Class<?> clazz, final String methodName, Class<?>... parameterTypes) throws NoSuchMethodException {
+        try {
+            return clazz.getMethod(methodName, parameterTypes);
+        } catch (NoSuchMethodException ignored) {
+        }
+
+        return clazz.getMethod(methodName, Arrays.stream(parameterTypes)
+                .map(type -> {
+                    if (primitiveTypesMap.containsKey(type)) {
+                        return primitiveTypesMap.get(type);
+                    }
+                    return type;
+                }).toArray(Class<?>[]::new));
     }
 }
