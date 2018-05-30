@@ -29,24 +29,34 @@ public class Serializer {
                     var getter = input.getClass().getMethod(getterName);
                     var value = getter.invoke(input);
                     if (value.getClass().isAssignableFrom(Integer.class)) {
+                        // field name
                         baos.write(f.getName().getBytes());
                         baos.write(DIVIDER_BYTE);
-
-                        // var buffer = ByteBuffer.allocate(32);
-                        // buffer.order(ByteOrder.BIG_ENDIAN);
-                        // buffer.putInt((Integer) value);
-                        // baos.write(buffer.array());
+                        // field type
+                        baos.write(Integer.class.getName().getBytes());
+                        baos.write(DIVIDER_BYTE);
+                        // field value
                         baos.write(((Integer) value).byteValue());
                         baos.write(DIVIDER_BYTE);
                     } else if (value.getClass().isAssignableFrom(String.class)) {
+                        // field name
                         baos.write(f.getName().getBytes());
                         baos.write(DIVIDER_BYTE);
+                        // field type
+                        baos.write(String.class.getName().getBytes());
+                        baos.write(DIVIDER_BYTE);
+                        // field value
                         baos.write(value.toString().getBytes());
                         baos.write(DIVIDER_BYTE);
                     } else if (value.getClass().isAssignableFrom(Date.class)) {
-                        Long millis = ((Date) value).getTime();
+                        // field name
                         baos.write(f.getName().getBytes());
                         baos.write(DIVIDER_BYTE);
+                        // field type
+                        baos.write(Date.class.getName().getBytes());
+                        baos.write(DIVIDER_BYTE);
+                        // field value
+                        Long millis = ((Date) value).getTime();
                         baos.write(millis.byteValue());
                         baos.write(DIVIDER_BYTE);
                     }
@@ -68,9 +78,11 @@ public class Serializer {
 
     public Object deserialize(byte[] input) {
         String className = null;
-        var properties = new HashMap<String, byte[]>();
+        var values = new HashMap<String, byte[]>();
+        var types = new HashMap<String, Class<?>>();
 
-        String current = null;
+        String currentField = null;
+        String currentType = null;
         var from = 0;
         var to = indexOf(input, 0, DIVIDER_BYTE);
         while (to != -1) {
@@ -78,43 +90,53 @@ public class Serializer {
             System.arraycopy(input, from, buffer, 0, to - from);
             if (className == null) {
                 className = new String(buffer);
-            } else if (current == null) {
-                current = new String(buffer);
+            } else if (currentField == null) {
+                currentField = new String(buffer);
+            } else if (currentType == null) {
+                currentType = new String(buffer);
             } else {
-                properties.put(current, buffer);
-                current = null;
+                try {
+                    types.put(currentField, Class.forName(currentType));
+                    values.put(currentField, buffer);
+                } catch (ClassNotFoundException e) {
+                    System.out.println("Invalid type: " + currentType);
+                }
+                currentField = null;
+                currentType = null;
             }
             from = to + 1;
             to = indexOf(input, from, DIVIDER_BYTE);
         }
 
-        for (var k : properties.keySet()) {
-            System.out.print(k + " -> ");
-            for (var b : properties.get(k)) {
+        for (var k : values.keySet()) {
+            System.out.print(k + " (" + types.get(k) + ") -> ");
+            for (var b : values.get(k)) {
                 System.out.print(b + " ");
             }
             System.out.println();
         }
 
         try {
-            Object obj = Class.forName(className).getConstructor().newInstance();
-
+            Class<?> clazz = Class.forName(className);
+            Object obj = clazz.getConstructor().newInstance();
+            for (var k : values.keySet()) {
+                var setterName = "set" + k.toUpperCase().charAt(0) + k.substring(1);
+                var setter = clazz.getMethod(setterName, types.get(k));
+                if (types.get(k).equals(Integer.class)) {
+                    // TODO integer from byte array
+                } else if (types.get(k).equals(String.class)) {
+                    setter.invoke(obj, new String(values.get(k)));
+                } else if (types.get(k).equals(Date.class)) {
+                    // TODO date from byte array
+                }
+            }
             return obj;
 
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return null;
-//
-//
+
 //        var index = 0;
 //
 //        while (input[index] != DIVIDER_BYTE) {
