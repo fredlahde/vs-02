@@ -4,9 +4,13 @@ import java.io.Serializable;
 import java.util.Date;
 
 public class PersonDTO implements Serializable {
-    private final String name;
-    private final Date birthdate;
-    private final int number;
+    private String name;
+    private Date birthdate;
+    private int number;
+
+    public PersonDTO() {
+
+    }
 
     public PersonDTO(String name, Date birthdate, int number) {
         this.name = name;

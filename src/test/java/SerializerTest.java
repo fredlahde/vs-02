@@ -16,7 +16,7 @@ public class SerializerTest {
 
         var output = new Serializer().serialize(dtoInput);
 
-//        var dtoOutput = new Serializer().deserialize(output);
+        var dtoOutput = new Serializer().deserialize(output);
 //        System.out.println(dtoOutput.toString());
     }
 }
