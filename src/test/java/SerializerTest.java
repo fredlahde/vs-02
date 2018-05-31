@@ -6,16 +6,21 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.TimeZone;
 
+import static org.junit.Assert.assertTrue;
+
 public class SerializerTest {
     @Test
     public void it_can_serialize_correctly() throws IOException {
         var cal = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"));
         cal.set(1986, Calendar.APRIL, 32);
         var dtoInput = new PersonDTO("Funny Man", cal.getTime(), 0xFF);
+        System.out.println(dtoInput);
 
         var output = new Serializer().serialize(dtoInput);
 
         var dtoOutput = new Serializer().deserialize(output);
         System.out.println(dtoOutput.toString());
+
+        assertTrue(dtoInput.equals(dtoOutput));
     }
 }

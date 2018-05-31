@@ -17,7 +17,7 @@ public class Serializer {
 
     public static final Map<Class<?>, Class<?>> primitiveTypesMap;
 
-    private static final byte DIVIDER_BYTE = 0; //DIVIDER_STRING.getBytes()[0];
+    private static final byte DIVIDER_BYTE = '|'; //DIVIDER_STRING.getBytes()[0];
 
     static {
         primitiveTypesMap = new HashMap<>();
@@ -48,11 +48,12 @@ public class Serializer {
                         baos.write(Integer.class.getName().getBytes());
                         baos.write(DIVIDER_BYTE);
                         // field value
-                        baos.write(((Integer) value).byteValue());
                         var buffer = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE);
                         buffer.order(ByteOrder.BIG_ENDIAN);
                         buffer.putInt((Integer) value);
+                        baos.write(buffer.array());
                         baos.write(DIVIDER_BYTE);
+
                     } else if (value.getClass().isAssignableFrom(String.class)) {
                         // field name
                         baos.write(f.getName().getBytes());
@@ -63,6 +64,7 @@ public class Serializer {
                         // field value
                         baos.write(value.toString().getBytes());
                         baos.write(DIVIDER_BYTE);
+
                     } else if (value.getClass().isAssignableFrom(Date.class)) {
                         // field name
                         baos.write(f.getName().getBytes());
@@ -72,7 +74,10 @@ public class Serializer {
                         baos.write(DIVIDER_BYTE);
                         // field value
                         Long millis = ((Date) value).getTime();
-                        baos.write(millis.byteValue());
+                        var buffer = ByteBuffer.allocate(Long.SIZE / Byte.SIZE);
+                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        buffer.putLong(millis);
+                        baos.write(buffer.array());
                         baos.write(DIVIDER_BYTE);
                     }
                 } catch (NoSuchMethodException e) {
@@ -84,10 +89,6 @@ public class Serializer {
                 }
             }
         }
-        for (byte b : baos.toByteArray()) {
-            System.out.print(b + " ");
-        }
-        System.out.println();
         return baos.toByteArray();
     }
 
@@ -125,10 +126,7 @@ public class Serializer {
 
         for (var k : values.keySet()) {
             System.out.print(k + " (" + types.get(k) + ") -> ");
-            for (var b : values.get(k)) {
-                System.out.print(b + " ");
-            }
-            System.out.println();
+            printByteArray(values.get(k));
         }
 
         try {
@@ -145,7 +143,10 @@ public class Serializer {
                 } else if (types.get(k).equals(String.class)) {
                     setter.invoke(obj, new String(values.get(k)));
                 } else if (types.get(k).equals(Date.class)) {
-                    // TODO date from byte array
+                    var buffer = ByteBuffer.wrap(values.get(k));
+                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    final long longFromBuffer = getLongFromBuffer(buffer);
+                    setter.invoke(obj, new Date(longFromBuffer));
                 }
             }
             return obj;
@@ -154,22 +155,6 @@ public class Serializer {
             e.printStackTrace();
         }
         return null;
-
-//        var index = 0;
-//
-//        while (input[index] != DIVIDER_BYTE) {
-//            index++;
-//        }
-//
-//        byte[] sizeOfStringArr = new byte[index];
-//        System.arraycopy(input, 0, sizeOfStringArr, 0, index);
-//        var sizeOfString = ByteBuffer.wrap(sizeOfStringArr).getInt();
-//
-//        byte[] stringArr = new byte[sizeOfString + 1];
-//        System.arraycopy(input, index + 1, stringArr, 0, sizeOfString);
-//        var name = new String(stringArr);
-//
-//        return null;
     }
 
     private int indexOf(byte[] array, int fromIndex, byte searchfor) {
@@ -207,5 +192,25 @@ public class Serializer {
 
         biggerBuffer.rewind();
         return biggerBuffer.getInt();
+    }
+
+    private long getLongFromBuffer(ByteBuffer buffer) {
+        try {
+            return buffer.getLong();
+        } catch (BufferUnderflowException ignored) {
+        }
+
+        var biggerBuffer = ByteBuffer.allocate(8);
+        biggerBuffer.put(7, buffer.array()[0]);
+
+        biggerBuffer.rewind();
+        return biggerBuffer.getLong();
+    }
+
+    private void printByteArray(byte[] array) {
+        for (var b : array) {
+            System.out.print(b + " ");
+        }
+        System.out.println();
     }
 }
