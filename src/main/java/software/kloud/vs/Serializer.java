@@ -183,15 +183,6 @@ public class Serializer {
         return null;
     }
 
-    private int indexOf(byte[] array, int fromIndex, byte searchfor) {
-        for (int i = fromIndex; i < array.length; i++) {
-            if (array[i] == searchfor) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     private Method getMethodPrimitiveSafe(Class<?> clazz, final String methodName, Class<?>... parameterTypes) throws NoSuchMethodException {
         try {
             return clazz.getMethod(methodName, parameterTypes);
