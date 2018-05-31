@@ -203,7 +203,7 @@ public class Serializer {
         }
 
         var biggerBuffer = ByteBuffer.allocate(4);
-        biggerBuffer.put(buffer.array());
+        biggerBuffer.put(3, buffer.array()[0]);
 
         biggerBuffer.rewind();
         return biggerBuffer.getInt();
