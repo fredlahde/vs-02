@@ -3,6 +3,7 @@ package software.kloud.vs;
 import java.beans.Transient;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.BufferUnderflowException;
@@ -17,8 +18,6 @@ public class Serializer {
 
     public static final Map<Class<?>, Class<?>> primitiveTypesMap;
 
-    private static final byte DIVIDER_BYTE = '|';
-
     static {
         primitiveTypesMap = new HashMap<>();
         primitiveTypesMap.put(Integer.class, int.class);
@@ -32,8 +31,9 @@ public class Serializer {
 
     public byte[] serialize(Object input) throws IOException {
         var baos = new ByteArrayOutputStream();
-        baos.write(input.getClass().getName().getBytes());
-        baos.write(DIVIDER_BYTE);
+        System.out.print("Class -> ");
+        baos.write(serializeProperty(input.getClass().getName().getBytes()));
+        System.out.println();
         for (var f : input.getClass().getDeclaredFields()) {
             if (!f.isAnnotationPresent(Transient.class)) {
                 try {
@@ -41,44 +41,40 @@ public class Serializer {
                     var getter = input.getClass().getMethod(getterName);
                     var value = getter.invoke(input);
                     if (value.getClass().isAssignableFrom(Integer.class)) {
-                        // field name
-                        baos.write(f.getName().getBytes());
-                        baos.write(DIVIDER_BYTE);
-                        // field type
-                        baos.write(Integer.class.getName().getBytes());
-                        baos.write(DIVIDER_BYTE);
-                        // field value
+                        System.out.print(f.getName() + " -> ");
+                        baos.write(serializeProperty(f.getName().getBytes()));
+                        System.out.print(f.getType().getName() + " -> ");
+                        baos.write(serializeProperty(Integer.class.getName().getBytes()));
+
                         var buffer = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE);
                         buffer.order(ByteOrder.BIG_ENDIAN);
                         buffer.putInt((Integer) value);
-                        baos.write(buffer.array());
-                        baos.write(DIVIDER_BYTE);
+                        System.out.print(value.toString() + " -> ");
+                        baos.write(serializeProperty(buffer.array()));
+                        System.out.println();
 
                     } else if (value.getClass().isAssignableFrom(String.class)) {
-                        // field name
-                        baos.write(f.getName().getBytes());
-                        baos.write(DIVIDER_BYTE);
-                        // field type
-                        baos.write(String.class.getName().getBytes());
-                        baos.write(DIVIDER_BYTE);
-                        // field value
-                        baos.write(value.toString().getBytes());
-                        baos.write(DIVIDER_BYTE);
+                        System.out.print(f.getName() + " -> ");
+                        baos.write(serializeProperty(f.getName().getBytes()));
+                        System.out.print(f.getType().getName() + " -> ");
+                        baos.write(serializeProperty(f.getType().getName().getBytes()));
+                        System.out.print(value.toString() + " -> ");
+                        baos.write(serializeProperty(value.toString().getBytes()));
+                        System.out.println();
 
                     } else if (value.getClass().isAssignableFrom(Date.class)) {
-                        // field name
-                        baos.write(f.getName().getBytes());
-                        baos.write(DIVIDER_BYTE);
-                        // field type
-                        baos.write(Date.class.getName().getBytes());
-                        baos.write(DIVIDER_BYTE);
-                        // field value
+                        System.out.print(f.getName() + " -> ");
+                        baos.write(serializeProperty(f.getName().getBytes()));
+                        System.out.print(f.getType().getName() + " -> ");
+                        baos.write(serializeProperty(f.getType().getName().getBytes()));
+
                         Long millis = ((Date) value).getTime();
                         var buffer = ByteBuffer.allocate(Long.SIZE / Byte.SIZE);
                         buffer.order(ByteOrder.BIG_ENDIAN);
                         buffer.putLong(millis);
-                        baos.write(buffer.array());
-                        baos.write(DIVIDER_BYTE);
+                        System.out.print(value.toString() + " -> ");
+                        baos.write(serializeProperty(buffer.array()));
+                        System.out.println();
                     }
                 } catch (NoSuchMethodException e) {
                     System.out.println("NoSuchMethodException: No getter found for field " + f.getName());
@@ -92,6 +88,24 @@ public class Serializer {
         return baos.toByteArray();
     }
 
+    private byte[] serializeProperty(byte[] value) throws IOException {
+        var baos = new ByteArrayOutputStream();
+
+        // byte count of this value
+        var buffer = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE);
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.putInt(value.length);
+        baos.write(buffer.array());
+        baos.write(value);
+
+        printByteArray(buffer.array());
+        System.out.print(" - ");
+        printByteArray(value);
+        System.out.println();
+
+        return baos.toByteArray();
+    }
+
     public Object deserialize(byte[] input) {
         String className = null;
         var values = new HashMap<String, byte[]>();
@@ -99,34 +113,44 @@ public class Serializer {
 
         String currentField = null;
         String currentType = null;
+
         var from = 0;
-        var to = indexOf(input, 0, DIVIDER_BYTE);
-        while (to != -1) {
-            byte[] buffer = new byte[to - from];
-            System.arraycopy(input, from, buffer, 0, to - from);
+        while (from < input.length) {
+            // get value length
+            byte[] temp = new byte[4];
+            System.arraycopy(input, from, temp, 0, 4);
+            var bb = ByteBuffer.wrap(temp);
+            bb.order(ByteOrder.BIG_ENDIAN);
+            final int len = getIntFromBuffer(bb);
+
+            // get value
+            from += 4;
+            temp = new byte[len];
+            System.arraycopy(input, from, temp, 0, len);
+
             if (className == null) {
-                className = new String(buffer);
+                className = new String(temp);
             } else if (currentField == null) {
-                currentField = new String(buffer);
+                currentField = new String(temp);
             } else if (currentType == null) {
-                currentType = new String(buffer);
+                currentType = new String(temp);
             } else {
                 try {
                     types.put(currentField, Class.forName(currentType));
-                    values.put(currentField, buffer);
+                    values.put(currentField, temp);
                 } catch (ClassNotFoundException e) {
                     System.out.println("Invalid type: " + currentType);
                 }
                 currentField = null;
                 currentType = null;
             }
-            from = to + 1;
-            to = indexOf(input, from, DIVIDER_BYTE);
+            from += len;
         }
 
         for (var k : values.keySet()) {
             System.out.print(k + " (" + types.get(k) + ") -> ");
             printByteArray(values.get(k));
+            System.out.println();
         }
 
         try {
@@ -211,6 +235,5 @@ public class Serializer {
         for (var b : array) {
             System.out.print(b + " ");
         }
-        System.out.println();
     }
 }
