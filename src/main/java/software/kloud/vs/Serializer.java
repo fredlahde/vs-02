@@ -17,7 +17,7 @@ public class Serializer {
 
     public static final Map<Class<?>, Class<?>> primitiveTypesMap;
 
-    private static final byte DIVIDER_BYTE = '|'; //DIVIDER_STRING.getBytes()[0];
+    private static final byte DIVIDER_BYTE = '|';
 
     static {
         primitiveTypesMap = new HashMap<>();
