@@ -5,9 +5,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Serializer {
 
@@ -136,7 +140,8 @@ public class Serializer {
                 if (types.get(k).equals(Integer.class)) {
                     var buffer = ByteBuffer.wrap(values.get(k));
                     buffer.order(ByteOrder.BIG_ENDIAN);
-                    setter.invoke(buffer.getInt());
+                    final int intFromBuffer = getIntFromBuffer(buffer);
+                    setter.invoke(obj, intFromBuffer);
                 } else if (types.get(k).equals(String.class)) {
                     setter.invoke(obj, new String(values.get(k)));
                 } else if (types.get(k).equals(Date.class)) {
@@ -189,5 +194,18 @@ public class Serializer {
                     }
                     return type;
                 }).toArray(Class<?>[]::new));
+    }
+
+    private int getIntFromBuffer(ByteBuffer buffer) {
+        try {
+            return buffer.getInt();
+        } catch (BufferUnderflowException ignored) {
+        }
+
+        var biggerBuffer = ByteBuffer.allocate(4);
+        biggerBuffer.put(buffer.array());
+
+        biggerBuffer.rewind();
+        return biggerBuffer.getInt();
     }
 }
