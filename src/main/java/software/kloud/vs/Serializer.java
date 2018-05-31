@@ -17,7 +17,7 @@ public class Serializer {
 
     public static final Map<Class<?>, Class<?>> primitiveTypesMap;
 
-    private static final byte DIVIDER_BYTE = 0; //DIVIDER_STRING.getBytes()[0];
+    private static final byte DIVIDER_BYTE = Byte.MIN_VALUE; //DIVIDER_STRING.getBytes()[0];
 
     static {
         primitiveTypesMap = new HashMap<>();
@@ -91,7 +91,7 @@ public class Serializer {
         return baos.toByteArray();
     }
 
-    public Object deserialize(byte[] input) {
+    public <T> T deserialize(byte[] input, Class<T> tClass) {
         String className = null;
         var values = new HashMap<String, byte[]>();
         var types = new HashMap<String, Class<?>>();
@@ -148,7 +148,8 @@ public class Serializer {
                     // TODO date from byte array
                 }
             }
-            return obj;
+            //noinspection unchecked
+            return (T) obj;
 
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -201,9 +202,13 @@ public class Serializer {
             return buffer.getInt();
         } catch (BufferUnderflowException ignored) {
         }
-
+        var array = buffer.array();
         var biggerBuffer = ByteBuffer.allocate(4);
-        biggerBuffer.put(3, buffer.array()[0]);
+
+        for (int i = array.length - 1; i >= 0; i--) {
+            byte b = array[i];
+            biggerBuffer.put(i, b);
+        }
 
         biggerBuffer.rewind();
         return biggerBuffer.getInt();
