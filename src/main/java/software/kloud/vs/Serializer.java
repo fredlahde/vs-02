@@ -75,6 +75,8 @@ public class Serializer {
                         System.out.print(value.toString() + " -> ");
                         baos.write(serializeProperty(buffer.array()));
                         System.out.println();
+                    } else {
+                        System.out.println("Unsupported type: " + value.getClass().getName());
                     }
                 } catch (NoSuchMethodException e) {
                     System.out.println("NoSuchMethodException: No getter found for field " + f.getName());
@@ -139,7 +141,7 @@ public class Serializer {
                     types.put(currentField, Class.forName(currentType));
                     values.put(currentField, temp);
                 } catch (ClassNotFoundException e) {
-                    System.out.println("Invalid type: " + currentType);
+                    System.out.println("Unsupported type: " + currentType);
                 }
                 currentField = null;
                 currentType = null;
