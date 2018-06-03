@@ -36,7 +36,7 @@ public class Serializer {
         baos.write(serializeProperty(input.getClass().getName().getBytes()));
         System.out.println();
         for (var f : input.getClass().getDeclaredFields()) {
-            if (!Modifier.isTransient(f.getModifiers())) {
+            if (!Modifier.isTransient(f.getModifiers()) && !Modifier.isStatic(f.getModifiers())) {
                 try {
                     var getterName = "get" + f.getName().toUpperCase().charAt(0) + f.getName().substring(1);
                     var getter = input.getClass().getMethod(getterName);
@@ -87,7 +87,7 @@ public class Serializer {
                     System.out.println("InvocationTargetException: Cannot retrieve value for field " + f.getName() + ".");
                 }
             } else {
-                System.out.println(f.getName() + " is transient and will be skipped.");
+                System.out.println(f.getName() + " is transient or static and will be skipped in serialization.");
             }
         }
         return baos.toByteArray();
