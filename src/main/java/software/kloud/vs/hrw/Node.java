@@ -32,4 +32,12 @@ public class Node<T extends Workload> {
     public String getId() {
         return id;
     }
+
+    public List<T> getWorkloads() {
+        return workloads;
+    }
+
+    public void clear() {
+        workloads.clear();
+    }
 }
