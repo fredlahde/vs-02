@@ -64,7 +64,7 @@ public class HRWTest {
         nodes.forEach(node -> {
             node.getWorkloads().forEach(w -> {
                 var key = String.format("%s-%s", node.getId(), w.getId());
-                if (distribution.add(key)) {
+                if (!distribution.add(key)) {
                     newlyDistributedWorkloads.incrementAndGet();
                 }
             });
