@@ -24,7 +24,7 @@ public class HRWTest {
                 .collect(Collectors.toList());
 
         var nodes = IntStream.range(1, numNodes)
-                .mapToObj(i -> random.generate(lenHash))
+                .mapToObj(i -> String.format("s%d.example.com", i))
                 .map(Node::new)
                 .collect(Collectors.toList());
 
