@@ -1,0 +1,69 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[left=1cm,right=1cm,top=1.5cm,bottom=1cm,includeheadfoot]{geometry}
+
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage{booktabs}
+
+
+\title{Verteilte Systeme}
+\author{Lukas f. Paluch}
+\date{}
+
+\begin{document}
+
+	\section{Modulus Ansatz}
+
+		\begin{tabular}{|c|c|}
+			intro.pdf & 1\\
+			index.html & 2\\
+			d41d8cd98f00b204e9800998ecf8427e & 0\\
+			0cc175b9c0f1b6a831c399e269772661 & 1\\
+			900150983cd24fb0d6963f7d28e17f72 & 1\\
+			f96b697d7cb7938d525a2f31aaf161d0 & 2\\
+			c3fcd3d76192e4007dfb496cca67e13b & 0\\
+			c0008dfc-b5c6-4ac8-9b96-c1780084109b & 2\\
+			fde20f54-6d1f-45a8-baf0-82d20b6a0c62 & 1\\
+			10af8b96-bf4a-4567-9cf4-56646cfefb23 & 0\\
+			cb4c2299-be2b-4673-ae76-0e98d1539833 & 1\\
+			c01c429b-5a55-4930-be48-8b0e2ae4db5d & 0\\
+		\end{tabular}
+
+		\subsection{Was passiert, wenn s3.example.com als Server wegfällt?}
+
+			Die Last wird auf die noch verfügbaren Server s2.example.com und s1.example.com verteilt.
+
+	\section{HRW-Ansatz}
+
+		\subsection{Die Verteilung auf 3 Nodes}
+
+		\begin{tabular}{|c|r|r|}
+			Node & Anzahl & Prozent \\ \midrule
+			n0 & 33\% & 3372 \\ \hline
+			n1 & 33\% & 3325 \\ \hline
+			n2 & 33\% & 3303 \\ \hline
+		\end{tabular}
+
+
+		\subsection{Die Verteilung auf 2 Nodes}
+
+		\begin{tabular}{|c|r|r|}
+			Node & Anzahl & Prozent \\ \midrule
+			n0 & 50\% & 4996 \\ \hline
+			n1 & 50\% & 5004 \\ \hline
+		\end{tabular}
+		Wenn s3 aus der Liste enfernt wird verteilt sich die Last gleichmäßig auf die verbliebenen 2 Nodes.
+
+		\subsection{Die Verteilung auf 4 Nodes}
+
+		\begin{tabular}{|c|r|r|}
+			Node & Anzahl & Prozent \\ \midrule
+			n0 & 25\% & 2469 \\ \hline
+			n1 & 25\% & 2523 \\ \hline
+			n2 & 25\% & 2545 \\ \hline
+			n3 & 25\% & 2463 \\ \hline
+		\end{tabular}
+		Wenn s4 zur Liste hinzugefügt wird verteilt sich die Last gleichmäßig auf die 4 Nodes.
+
+\end{document}
+

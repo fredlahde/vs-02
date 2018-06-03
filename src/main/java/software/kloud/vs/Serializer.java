@@ -129,6 +129,7 @@ public class Serializer {
         String className = null;
         var values = new HashMap<String, byte[]>();
         var types = new HashMap<String, Class<?>>();
+        var checksums = new HashMap<String, Integer>();
 
         String currentField = null;
         String currentType = null;
@@ -154,6 +155,15 @@ public class Serializer {
             } else if (currentType == null) {
                 currentType = new String(temp);
             } else {
+                from += len;
+
+                byte[] checksum = new byte[4];
+                System.arraycopy(input, from, checksum, 0, 4);
+                var bb2 = ByteBuffer.wrap(input, from, 4);
+                bb2.order(ByteOrder.BIG_ENDIAN);
+                final int len = getIntFromBuffer(bb);
+                from += 4;
+
                 try {
                     types.put(currentField, Class.forName(currentType));
                     values.put(currentField, temp);
@@ -163,7 +173,6 @@ public class Serializer {
                 currentField = null;
                 currentType = null;
             }
-            from += len;
         }
 
         for (var k : values.keySet()) {
