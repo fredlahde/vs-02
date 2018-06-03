@@ -2,8 +2,12 @@ package software.kloud.vs;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
+import java.util.logging.Logger;
 
 public class PersonDTO implements Serializable {
+
+    private transient String transientField;
     private String name;
     private Date birthdate;
     private int number;
@@ -49,5 +53,21 @@ public class PersonDTO implements Serializable {
                 ", birthdate=" + birthdate +
                 ", number=" + number +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PersonDTO personDTO = (PersonDTO) o;
+        return number == personDTO.number &&
+                Objects.equals(name, personDTO.name) &&
+                Objects.equals(birthdate, personDTO.birthdate);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(name, birthdate, number);
     }
 }
