@@ -3,10 +3,7 @@ package software.kloud.vs;
 import java.beans.Transient;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -54,7 +51,6 @@ public class Serializer {
                         System.out.print(value.toString() + " -> ");
                         baos.write(serializeProperty(buffer.array()));
 
-                        baos.write(serializeProperty(serializeChecksum(value)));
                         System.out.println();
 
                     } else if (value.getClass().isAssignableFrom(String.class)) {
@@ -65,7 +61,6 @@ public class Serializer {
                         System.out.print(value.toString() + " -> ");
                         baos.write(serializeProperty(value.toString().getBytes()));
 
-                        baos.write(serializeProperty(serializeChecksum(value)));
                         System.out.println();
 
                     } else if (value.getClass().isAssignableFrom(Date.class)) {
@@ -81,30 +76,22 @@ public class Serializer {
                         System.out.print(value.toString() + " -> ");
                         baos.write(serializeProperty(buffer.array()));
 
-                        baos.write(serializeProperty(serializeChecksum(value)));
                         System.out.println();
                     } else {
-                        System.out.println("Unsupported type: " + value.getClass().getName());
+                        System.err.println("Unsupported type: " + value.getClass().getName());
                     }
                 } catch (NoSuchMethodException e) {
-                    System.out.println("NoSuchMethodException: No getter found for field " + f.getName());
+                    System.err.println("NoSuchMethodException: No getter found for field " + f.getName());
                 } catch (IllegalAccessException e) {
-                    System.out.println("IllegalAccessException: Cannot retrieve value for field " + f.getName() + ". Getter not public?");
+                    System.err.println("IllegalAccessException: Cannot retrieve value for field " + f.getName() + ". Getter not public?");
                 } catch (InvocationTargetException e) {
-                    System.out.println("InvocationTargetException: Cannot retrieve value for field " + f.getName() + ".");
+                    System.err.println("InvocationTargetException: Cannot retrieve value for field " + f.getName() + ".");
                 }
             } else {
                 System.out.println(f.getName() + " is transient or static and will be skipped in serialization.");
             }
         }
         return baos.toByteArray();
-    }
-
-    private byte[] serializeChecksum(Object value) {
-        var buffer = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE);
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        buffer.putInt(value.hashCode());
-        return buffer.array();
     }
 
     private byte[] serializeProperty(byte[] value) throws IOException {
@@ -114,12 +101,21 @@ public class Serializer {
         var buffer = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE);
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.putInt(value.length);
+
+        // checksum
+        var checksum = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE);
+        checksum.order(ByteOrder.BIG_ENDIAN);
+        checksum.putInt(Arrays.hashCode(value));
+
         baos.write(buffer.array());
         baos.write(value);
+        baos.write(checksum.array());
 
         printByteArray(buffer.array());
         System.out.print(" - ");
         printByteArray(value);
+        System.out.print(" - ");
+        printByteArray(checksum.array());
         System.out.println();
 
         return baos.toByteArray();
@@ -137,38 +133,38 @@ public class Serializer {
         var from = 0;
         while (from < input.length) {
             // get value length
-            byte[] temp = new byte[4];
-            System.arraycopy(input, from, temp, 0, 4);
-            var bb = ByteBuffer.wrap(temp);
-            bb.order(ByteOrder.BIG_ENDIAN);
-            final int len = getIntFromBuffer(bb);
+            var lenBuffer = ByteBuffer.wrap(input, from, 4);
+            lenBuffer.order(ByteOrder.BIG_ENDIAN);
+            final int len = getIntFromBuffer(lenBuffer);
+            from += 4;
 
             // get value
+            byte[] value = new byte[len];
+            System.arraycopy(input, from, value, 0, len);
+            from += len;
+
+            // get checksum
+            var checksumBuffer = ByteBuffer.wrap(input, from, 4);
+            checksumBuffer.order(ByteOrder.BIG_ENDIAN);
+            final int checksum = getIntFromBuffer(checksumBuffer);
             from += 4;
-            temp = new byte[len];
-            System.arraycopy(input, from, temp, 0, len);
+
+            if (Arrays.hashCode(value) != checksum) {
+                System.err.println("Checksum does not match byte array. Serialization is probably wrong.");
+            }
 
             if (className == null) {
-                className = new String(temp);
+                className = new String(value);
             } else if (currentField == null) {
-                currentField = new String(temp);
+                currentField = new String(value);
             } else if (currentType == null) {
-                currentType = new String(temp);
+                currentType = new String(value);
             } else {
-                from += len;
-
-                byte[] checksum = new byte[4];
-                System.arraycopy(input, from, checksum, 0, 4);
-                var bb2 = ByteBuffer.wrap(input, from, 4);
-                bb2.order(ByteOrder.BIG_ENDIAN);
-                final int len = getIntFromBuffer(bb);
-                from += 4;
-
                 try {
                     types.put(currentField, Class.forName(currentType));
-                    values.put(currentField, temp);
+                    values.put(currentField, value);
                 } catch (ClassNotFoundException e) {
-                    System.out.println("Unsupported type: " + currentType);
+                    System.err.println("Unsupported type: " + currentType);
                 }
                 currentField = null;
                 currentType = null;
