@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,7 +36,7 @@ public class Serializer {
         baos.write(serializeProperty(input.getClass().getName().getBytes()));
         System.out.println();
         for (var f : input.getClass().getDeclaredFields()) {
-            if (!f.isAnnotationPresent(Transient.class)) {
+            if (!Modifier.isTransient(f.getModifiers())) {
                 try {
                     var getterName = "get" + f.getName().toUpperCase().charAt(0) + f.getName().substring(1);
                     var getter = input.getClass().getMethod(getterName);
@@ -85,6 +86,8 @@ public class Serializer {
                 } catch (InvocationTargetException e) {
                     System.out.println("InvocationTargetException: Cannot retrieve value for field " + f.getName() + ".");
                 }
+            } else {
+                System.out.println(f.getName() + " is transient and will be skipped.");
             }
         }
         return baos.toByteArray();

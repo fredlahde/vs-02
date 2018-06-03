@@ -3,8 +3,11 @@ package software.kloud.vs;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 public class PersonDTO implements Serializable {
+
+    private transient String transientField;
     private String name;
     private Date birthdate;
     private int number;
