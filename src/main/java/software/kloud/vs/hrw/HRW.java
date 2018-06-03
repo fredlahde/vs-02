@@ -4,13 +4,11 @@ import com.google.common.hash.HashFunction;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class HRW<T extends Workload> {
-    public static final int LENGHT_HASH = 4096;
     private final List<Node<T>> nodes;
     private final HashFunction hashFunc;
 
@@ -43,7 +41,7 @@ public class HRW<T extends Workload> {
     }
 
     public void remove(Node<T> nodeToRemove) {
-        var workloadsToDistribute = new ArrayList<T>(nodeToRemove.getWorkloads());
+        var workloadsToDistribute = new ArrayList<>(nodeToRemove.getWorkloads());
         nodeToRemove.clear();
         nodes.removeIf(n -> n.getId().equals(nodeToRemove.getId()));
         distribute(workloadsToDistribute);

@@ -47,13 +47,11 @@ public class HRWTest {
                 .forEach(System.out::println);
 
         Set<String> distribution = new HashSet<>();
-        nodes.forEach(node -> {
-            distribution.addAll(node.getWorkloads().stream()
-                    .map(w -> String.format("%s-%s", node.getId(), w.getId()))
-                    .collect(Collectors.toSet()));
-        });
+        nodes.forEach(node -> distribution.addAll(node.getWorkloads().stream()
+                .map(w -> String.format("%s-%s", node.getId(), w.getId()))
+                .collect(Collectors.toSet())));
 
-        hrw.add(new Node<Workload>("s4.example.com"));
+        hrw.add(new Node<>("s4.example.com"));
         System.out.println();
 
         nodes.stream()
@@ -61,15 +59,13 @@ public class HRWTest {
                 .forEach(System.out::println);
 
         var newlyDistributedWorkloads = new AtomicInteger();
-        nodes.forEach(node -> {
-            node.getWorkloads().forEach(w -> {
-                var key = String.format("%s-%s", node.getId(), w.getId());
-                if (!distribution.add(key)) {
-                    newlyDistributedWorkloads.incrementAndGet();
-                }
-            });
-        });
+        nodes.forEach(node -> node.getWorkloads().forEach(w -> {
+            var key = String.format("%s-%s", node.getId(), w.getId());
+            if (!distribution.add(key)) {
+                newlyDistributedWorkloads.incrementAndGet();
+            }
+        }));
 
-        System.out.printf("Newly distributed workloads: %f", (100d / numWorkload * newlyDistributedWorkloads.get()));
+        System.out.printf("Newly distributed workloads: %.3f", (100d / numWorkload * newlyDistributedWorkloads.get()));
     }
 }
