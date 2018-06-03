@@ -41,7 +41,7 @@ public class HRW<T extends Workload> {
     }
 
     public void remove(Node<T> nodeToRemove) {
-        var workloadsToDistribute = new ArrayList<>(nodeToRemove.getWorkloads());
+        @SuppressWarnings("Convert2Diamond") var workloadsToDistribute = new ArrayList<T>(nodeToRemove.getWorkloads());
         nodeToRemove.clear();
         nodes.removeIf(n -> n.getId().equals(nodeToRemove.getId()));
         distribute(workloadsToDistribute);
