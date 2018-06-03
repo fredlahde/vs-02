@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.Checksum;
 
 public class Serializer {
 
@@ -52,6 +53,8 @@ public class Serializer {
                         buffer.putInt((Integer) value);
                         System.out.print(value.toString() + " -> ");
                         baos.write(serializeProperty(buffer.array()));
+
+                        baos.write(serializeProperty(serializeChecksum(value)));
                         System.out.println();
 
                     } else if (value.getClass().isAssignableFrom(String.class)) {
@@ -61,6 +64,8 @@ public class Serializer {
                         baos.write(serializeProperty(f.getType().getName().getBytes()));
                         System.out.print(value.toString() + " -> ");
                         baos.write(serializeProperty(value.toString().getBytes()));
+
+                        baos.write(serializeProperty(serializeChecksum(value)));
                         System.out.println();
 
                     } else if (value.getClass().isAssignableFrom(Date.class)) {
@@ -75,6 +80,8 @@ public class Serializer {
                         buffer.putLong(millis);
                         System.out.print(value.toString() + " -> ");
                         baos.write(serializeProperty(buffer.array()));
+
+                        baos.write(serializeProperty(serializeChecksum(value)));
                         System.out.println();
                     } else {
                         System.out.println("Unsupported type: " + value.getClass().getName());
@@ -91,6 +98,13 @@ public class Serializer {
             }
         }
         return baos.toByteArray();
+    }
+
+    private byte[] serializeChecksum(Object value) {
+        var buffer = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE);
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.putInt(value.hashCode());
+        return buffer.array();
     }
 
     private byte[] serializeProperty(byte[] value) throws IOException {
