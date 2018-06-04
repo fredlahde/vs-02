@@ -35,12 +35,13 @@ public class HRWTest {
 
         hrw.distribute(workloads);
 
+        System.out.println("Workload distribution after initial distribution:");
         nodes.stream()
                 .map(n -> String.format("Node: %s Workloads: %d", n.getId(), n.count()))
                 .forEach(System.out::println);
 
-        System.out.println();
         hrw.remove(nodes.get(2));
+        System.out.println("\nWorkload distribution after removing third node::");
 
         nodes.stream()
                 .map(n -> String.format("Node: %s Workloads: %d", n.getId(), n.count()))
@@ -54,6 +55,7 @@ public class HRWTest {
         hrw.add(new Node<>("s4.example.com"));
         System.out.println();
 
+        System.out.println("Workload distribution after adding new node::");
         nodes.stream()
                 .map(n -> String.format("Node: %s Workloads: %d", n.getId(), n.count()))
                 .forEach(System.out::println);
@@ -66,6 +68,6 @@ public class HRWTest {
             }
         }));
 
-        System.out.printf("Newly distributed workloads: %.3f", (100d / numWorkload * newlyDistributedWorkloads.get()));
+        System.out.printf("\nNewly distributed workloads: %.3f", (100d / numWorkload * newlyDistributedWorkloads.get()));
     }
 }
