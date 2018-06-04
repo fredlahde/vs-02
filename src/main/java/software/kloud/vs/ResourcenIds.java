@@ -20,8 +20,7 @@ public class ResourcenIds {
         };
         String[] server = {
                 "s1.example.com",
-                "s2.example.com",
-                "s3.example.com"
+                "s2.example.com"
         };
 
         for (var id : ids) {

@@ -8,6 +8,7 @@ import java.lang.reflect.Modifier;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -125,7 +126,6 @@ public class Serializer {
         String className = null;
         var values = new HashMap<String, byte[]>();
         var types = new HashMap<String, Class<?>>();
-        var checksums = new HashMap<String, Integer>();
 
         String currentField = null;
         String currentType = null;
@@ -189,7 +189,7 @@ public class Serializer {
                     final int intFromBuffer = getIntFromBuffer(buffer);
                     setter.invoke(obj, intFromBuffer);
                 } else if (types.get(k).equals(String.class)) {
-                    setter.invoke(obj, new String(values.get(k)));
+                    setter.invoke(obj, new String(values.get(k), Charset.forName("UTF-8")));
                 } else if (types.get(k).equals(Date.class)) {
                     var buffer = ByteBuffer.wrap(values.get(k));
                     buffer.order(ByteOrder.BIG_ENDIAN);
